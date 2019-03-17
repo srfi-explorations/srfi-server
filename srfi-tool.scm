@@ -153,27 +153,20 @@
      (lambda (i arg)
        (cond ((equal? "->" arg)
               (set! last-arrow i))
-             ((and (list? arg) (equal? 'optional (car arg)))
-              (set! full-list
-                    (append full-list
-                            (parse-arg-list
-                             (cdr arg)
-                             (append flags
-                                     '(optional)
-                                     (if (equal? last-arrow (- i 1))
-                                         '(return)
-                                         '()))))))
              ((list? arg)
-              (if (not (member 'syntax flags))
-                  (set! full-list
-                        (append full-list
-                                `((sublist
-                                   ,@(parse-arg-list
-                                      arg
-                                      (append flags
-                                              (if (equal? last-arrow (- i 1))
-                                                  '(return)
-                                                  '())))))))))
+              (let ((retflags (if (equal? last-arrow (- i 1)) '(return) '())))
+                (cond ((equal? 'optional (car arg))
+                       (set! full-list
+                             (append full-list
+                                     (parse-arg-list
+                                      (cdr arg)
+                                      (append flags retflags '(optional))))))
+                      ((not (member 'syntax flags))
+                       (set! full-list
+                             (append full-list
+                                     `((sublist
+                                        ,@(parse-arg-list
+                                           arg (append flags retflags))))))))))
              (else
               (if (not (or (string? arg) (symbol? arg)))
                   (error (string-append "Expected symbol in arglist but got "
