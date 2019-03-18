@@ -81,6 +81,9 @@
 (define (web-method-not-allowed req)
   (web-error-response 405 "Method Not Allowed" req))
 
+(define (web-admin-github req)
+  (display (bytes->jsexpr (request-post-data/raw req)) (current-error-port)))
+
 (define (web-main-page req)
   (response/xexpr
    '(html (head (title "Racket Heroku App"))
@@ -91,9 +94,9 @@
    (("")
     #:method "get"
     web-main-page)
-   (("hello")
-    #:method (regexp ".*")
-    web-method-not-allowed)
+   (("admin/github")
+    #:method "post"
+    web-admin-github)
    (else
     web-not-found)))
 
