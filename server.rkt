@@ -111,8 +111,16 @@
     (cond ((not (github-sha1-match? req req-bytes))
            (web-unauthorized req))
           (else
-           (display (bytes->jsexpr req-bytes) (current-error-port))
-           (display #\newline (current-error-port))
+           (let ((j (bytes->jsexpr req-bytes)))
+             (display j (current-error-port))
+             (display #\newline (current-error-port))
+             (fprintf (current-error-port)
+                      "The archive download link is <~a>~n"
+                      (let ((commit-hash (hash-ref j 'after))
+                            (archive-url (hash-ref (hash-ref j 'repository) 'archive_url)))
+                        (set! archive-url (string-replace archive-url "{archive_format}" "zipball"))
+                        (set! archive-url (string-replace archive-url "{/ref}" (string-append "/" commit-hash)))
+                        archive-url)))
            (response/xexpr '(html (body (h1 "OK"))))))))
 
 (define (web-main-page req)
