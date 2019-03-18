@@ -66,46 +66,47 @@
                  headers
                  (list (string->bytes/utf-8 body))))
 
-(define (web-error-response status-code status-text req)
-  (let ((uri (url->string (request-uri req))))
-    (response/full status-code
-                   (string->bytes/utf-8 status-text)
-                   (current-seconds)
-                   (string->bytes/utf-8 "text/plain; charset=utf-8")
-                   empty
-                   (list (string->bytes/utf-8 status-text)))))
+(define (web-error-response status-code status-text)
+  (response/full status-code
+                 (string->bytes/utf-8 status-text)
+                 (current-seconds)
+                 (string->bytes/utf-8 "text/plain; charset=utf-8")
+                 empty
+                 (list (string->bytes/utf-8 status-text))))
 
 (define (web-not-found req)
-  (web-error-response 404 "Not Found" req))
+  (web-error-response 404 "Not Found"))
 
 (define (web-method-not-allowed req)
-  (web-error-response 405 "Method Not Allowed" req))
+  (web-error-response 405 "Method Not Allowed"))
 
 (define (web-admin-github req)
-  (display (bytes->jsexpr (request-post-data/raw req)) (current-error-port)))
+  (display (bytes->jsexpr (request-post-data/raw req)) (current-error-port))
+  (display #\newline (current-error-port))
+  (response/xexpr '(html (body (h1 "OK")))))
 
 (define (web-main-page req)
   (response/xexpr
    '(html (head (title "Racket Heroku App"))
           (body (h1 "It works!")))))
 
-(define-values (web-dispatcher _)
+(define-values (web-dispatch web-url)
   (dispatch-rules
-   (("")
-    #:method "get"
-    web-main-page)
-   (("admin/github")
+   [("")
+    web-main-page]
+   [("admin" "github")
     #:method "post"
-    web-admin-github)
-   (else
-    web-not-found)))
+    web-admin-github]
+   [else
+    web-not-found]))
 
 (define (web-serve)
-  (serve/servlet web-dispatcher
+  (serve/servlet web-dispatch
                  #:port web-port
                  #:listen-ip #f
                  #:command-line? #t
-                 #:servlet-path "/"))
+                 #:servlet-path "/"
+                 #:servlet-regexp #rx""))
 
 (database-initialize)
 (web-serve)
