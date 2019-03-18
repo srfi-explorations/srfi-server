@@ -13,13 +13,15 @@
 
 ;;;
 
-(define web-port (if (getenv "PORT")
-                     (string->number (getenv "PORT"))
-                     (error "PORT environment variable not set")))
+(define (must-env envar)
+  (let ((val (getenv envar)))
+    (if (and val (not (= 0 (string-length val))))
+        val
+        (error (string-append envar " environment variable not set")))))
 
-(define database-url (if (getenv "DATABASE_URL")
-                         (string->url (getenv "DATABASE_URL"))
-                         (error "DATABASE_URL environment variable not set")))
+(define web-port (string->number (must-env "PORT")))
+
+(define database-url (string->url (must-env "DATABASE_URL")))
 
 ;;;
 
