@@ -101,6 +101,7 @@
   (serve/servlet web-dispatcher
                  #:port web-port
                  #:listen-ip #f
+                 #:command-line? #t
                  #:servlet-path "/"))
 
 (database-initialize)
