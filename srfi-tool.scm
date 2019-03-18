@@ -223,7 +223,8 @@
                    (let ((classes (html-classes elem)))
                      (if (member "def"  classes)
                          (let ((text (cleanup (sxml-text elem)))
-                               (type (cond ((member "syntax" classes) 'syntax)
+                               (type (cond ((member "variable" classes) 'variable)
+                                           ((member "syntax" classes) 'syntax)
                                            ((member "proc" classes) 'proc))))
                            (proc text type)))))
                  sxml))
@@ -237,8 +238,11 @@
                      (display-list (parse-proc-def text #t)))
                     ('proc
                      (display-list (parse-proc-def text #f)))
+                    ('variable
+                     (display-list
+                      `(variable ,@(read-all-sexps (make-string-reader text)))))
                     (else
-                     (error "foo")))
+                     (error "Unknown def type")))
                   (newline))
                 (call-with-input-file html-filename html->sxml)))
 
