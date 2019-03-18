@@ -94,19 +94,23 @@
 (define (web-unauthorized req)
   (web-error-response 403 "Forbidden"))
 
-(define (valid-github-signature? req-hub-sig req-bytes)
-  (and (bytes? req-hub-sig)
-       (bytes=? req-hub-sig
-                (bytes-append
-                 #"sha1="
-                 (string->bytes/utf-8
-                  (bytes->hex-string
-                   (hmac 'sha1 github-webhook-secret req-bytes)))))))
+(define (github-sha1 byts)
+  (bytes-append #"sha1="
+                (string->bytes/utf-8
+                 (bytes->hex-string
+                  (hmac 'sha1 github-webhook-secret byts)))))
+
+(define (github-sha1-match? req req-bytes)
+  (let* ((sig-head* (headers-assq* #"X-Hub-Signature" (request-headers/raw req)))
+         (sig-head (if sig-head* (header-value sig-head*) #""))
+         (sig-body (github-sha1 req-bytes)))
+    (fprintf (current-error-port) "sig-head == ~a~n" sig-head)
+    (fprintf (current-error-port) "sig-body == ~a~n" sig-body)
+    (bytes=? sig-head sig-body)))
 
 (define (web-admin-github req)
-  (let* ((req-hub-sig (headers-assq* #"X-Hub-Signature" (request-headers/raw req)))
-         (req-bytes (request-post-data/raw req)))
-    (cond ((not (valid-github-signature? req-hub-sig req-bytes))
+  (let* ((req-bytes (request-post-data/raw req)))
+    (cond ((not (github-sha1-match? req req-bytes))
            (web-unauthorized req))
           (else
            (display (bytes->jsexpr req-bytes) (current-error-port))
