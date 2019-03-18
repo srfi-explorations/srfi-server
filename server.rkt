@@ -1,6 +1,8 @@
 #lang racket
 
 (require
+ crypto
+ crypto/libcrypto
  db/base
  db/postgresql
  file/unzip
@@ -11,6 +13,8 @@
  web-server/servlet
  web-server/servlet-env)
 
+(crypto-factories libcrypto-factory)
+
 ;;;
 
 (define (must-env envar)
@@ -19,9 +23,14 @@
         val
         (error (string-append envar " environment variable not set")))))
 
-(define web-port (string->number (must-env "PORT")))
+(define web-port
+  (string->number (must-env "PORT")))
 
-(define database-url (string->url (must-env "DATABASE_URL")))
+(define database-url
+  (string->url (must-env "DATABASE_URL")))
+
+(define github-webhook-secret
+  (string->bytes/utf-8 (must-env "GITHUB_WEBHOOK_SECRET")))
 
 ;;;
 
@@ -82,10 +91,27 @@
 (define (web-method-not-allowed req)
   (web-error-response 405 "Method Not Allowed"))
 
+(define (web-unauthorized req)
+  (web-error-response 403 "Forbidden"))
+
+(define (valid-github-signature? req-hub-sig req-bytes)
+  (and (bytes? req-hub-sig)
+       (bytes=? req-hub-sig
+                (bytes-append
+                 #"sha1="
+                 (string->bytes/utf-8
+                  (bytes->hex-string
+                   (hmac 'sha1 github-webhook-secret req-bytes)))))))
+
 (define (web-admin-github req)
-  (display (bytes->jsexpr (request-post-data/raw req)) (current-error-port))
-  (display #\newline (current-error-port))
-  (response/xexpr '(html (body (h1 "OK")))))
+  (let* ((req-hub-sig (headers-assq* #"X-Hub-Signature" (request-headers/raw req)))
+         (req-bytes (request-post-data/raw req)))
+    (cond ((not (valid-github-signature? req-hub-sig req-bytes))
+           (web-unauthorized req))
+          (else
+           (display (bytes->jsexpr req-bytes) (current-error-port))
+           (display #\newline (current-error-port))
+           (response/xexpr '(html (body (h1 "OK"))))))))
 
 (define (web-main-page req)
   (response/xexpr
