@@ -106,6 +106,12 @@
          (sig-body (github-sha1 req-bytes)))
     (bytes=? sig-head sig-body)))
 
+(define (github-archive-url repository commit-hash)
+  (let ((u (hash-ref repository 'archive_url)))
+    (set! u (string-replace u "{archive_format}" "zipball"))
+    (set! u (string-replace u "{/ref}" (string-append "/" commit-hash)))
+    u))
+
 (define (web-admin-github req)
   (let* ((req-bytes (request-post-data/raw req)))
     (cond ((not (github-sha1-match? req req-bytes))
@@ -114,14 +120,22 @@
            (let ((j (bytes->jsexpr req-bytes)))
              (display j (current-error-port))
              (display #\newline (current-error-port))
-             (fprintf (current-error-port)
-                      "The archive download link is <~a>~n"
-                      (let ((commit-hash (hash-ref j 'after))
-                            (archive-url (hash-ref (hash-ref j 'repository) 'archive_url)))
-                        (set! archive-url (string-replace archive-url "{archive_format}" "zipball"))
-                        (set! archive-url (string-replace archive-url "{/ref}" (string-append "/" commit-hash)))
-                        archive-url)))
-           (response/xexpr '(html (body (h1 "OK"))))))))
+             (let* ((repository (hash-ref j 'repository))
+                    (repo-name (hash-ref repository 'name)))
+               (fprintf (current-error-port)
+                        "The repo name is <~a>~n" repo-name)
+               (match (regexp-match #rx"^srfi-([1-9]\\d*)$" repo-name)
+                 ((list _ srfi-number)
+                  (let ((srfi-number (string->number srfi-number)))
+                    (fprintf (current-error-port)
+                             "The repo SRFI number is <~a>~n" srfi-number)))
+                 (else
+                  (fprintf (current-error-port) "This is not a SRFI repo")))
+               (fprintf (current-error-port)
+                        "The archive download link is <~a>~n"
+                        (let ((commit-hash (hash-ref j 'after)))
+                          (github-archive-url repository commit-hash)))
+               (response/xexpr '(html (body (h1 "OK"))))))))))
 
 (define (web-main-page req)
   (response/xexpr
