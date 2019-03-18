@@ -52,12 +52,12 @@
 
 ;;
 
-(define (sxml-find predicate elem)
+(define (sxml-for-each proc elem)
   (cond ((not (pair? elem)) '())
         ((equal? '@ (car elem)) '())
-        (else (append (if (predicate elem) (list elem) '())
-                      (append-map (lambda (x) (sxml-find predicate x))
-                                  (cdr elem))))))
+        (else (proc elem)
+              (for-each (lambda (x) (sxml-for-each proc x))
+                        (cdr elem)))))
 
 (define (sxml-text elem)
   (cond ((string? elem) elem)
@@ -141,9 +141,6 @@
 
 ;;
 
-(define (parse-lenient-html-with-classes html-filename)
-  (call-with-input-file html-filename html->sxml))
-
 (define (html-classes elem)
   (let ((classes (assoc 'class (sxml-attributes elem))))
     (if classes
@@ -212,28 +209,38 @@
                               `((,which ,arg ,@argflags)))))))))
     full-list))
 
-(define (parse-proc-def s)
+(define (parse-proc-def s syntax?)
   (debug "parse-proc-def: " (print-to-string s))
   (let ((things (read-all-sexps (make-string-reader s))))
-    `(procedure ,(car things) ,@(parse-arg-list (cdr things) '()))))
+    (if (and (pair? (car things)) (pair? (caar things)))
+        (set! things (caar things)))
+    `(,(if syntax? 'syntax 'procedure)
+      ,(car things)
+      ,@(parse-arg-list (cdr things) (if syntax? '(syntax) '())))))
 
-(define (proc-defs sxml)
-  (map (lambda (elem) (cleanup (sxml-text elem)))
-       (sxml-find (lambda (elem)
-                    (let ((classes (html-classes elem)))
-                      (and (member "proc" classes)
-                           (member "def"  classes))))
-                  sxml)))
+(define (for-each-def proc sxml)
+  (sxml-for-each (lambda (elem)
+                   (let ((classes (html-classes elem)))
+                     (if (member "def"  classes)
+                         (let ((text (cleanup (sxml-text elem)))
+                               (type (cond ((member "syntax" classes) 'syntax)
+                                           ((member "proc" classes) 'proc))))
+                           (proc text type)))))
+                 sxml))
 
 ;;
 
 (define (process-file html-filename)
-  (let ((sxml (parse-lenient-html-with-classes html-filename)))
-    (map (lambda (s)
-           (let ((parsed (parse-proc-def s)))
-             (display-list parsed)
-             (newline)))
-         (proc-defs sxml))))
+  (for-each-def (lambda (text type)
+                  (case type
+                    ('syntax
+                     (display-list (parse-proc-def text #t)))
+                    ('proc
+                     (display-list (parse-proc-def text #f)))
+                    (else
+                     (error "foo")))
+                  (newline))
+                (call-with-input-file html-filename html->sxml)))
 
 (define (main arguments)
   (for-each process-file (cdr arguments)))
