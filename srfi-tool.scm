@@ -1,10 +1,23 @@
 (import
+ (scheme base)
  (scheme r5rs)
  (srfi 1)
  (srfi 6)
  (srfi 23)
  (srfi 130)
  (chibi html-parser))
+
+;;
+
+(define *debug* #t)
+
+(define-syntax debug
+  (syntax-rules ()
+    ((_ strings ...)
+     (begin (if *debug*
+                (display (string-append "debug: " strings ... (string #\newline))
+                         (current-error-port)))
+            #f))))
 
 ;;
 
@@ -200,6 +213,7 @@
     full-list))
 
 (define (parse-proc-def s)
+  (debug "parse-proc-def: " (print-to-string s))
   (let ((things (read-all-sexps (make-string-reader s))))
     `(procedure ,(car things) ,@(parse-arg-list (cdr things) '()))))
 
