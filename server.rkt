@@ -104,8 +104,6 @@
   (let* ((sig-head* (headers-assq* #"X-Hub-Signature" (request-headers/raw req)))
          (sig-head (if sig-head* (header-value sig-head*) #""))
          (sig-body (github-sha1 req-bytes)))
-    (fprintf (current-error-port) "sig-head == ~a~n" sig-head)
-    (fprintf (current-error-port) "sig-body == ~a~n" sig-body)
     (bytes=? sig-head sig-body)))
 
 (define (web-admin-github req)
