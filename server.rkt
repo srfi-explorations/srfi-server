@@ -3,6 +3,7 @@
 (require
  crypto
  crypto/libcrypto
+ css-expr
  db/base
  db/postgresql
  file/unzip
@@ -177,8 +178,55 @@
 
 (define (web-main-page req)
   (response/xexpr
-   '(html (head (title "Racket Heroku App"))
-          (body (h1 "It works!")))))
+   `(html
+     (head
+      (title "SRFI Status Dashboard")
+      (style
+          ,(css-expr->css
+            (css-expr
+             [html #:font-family sans-serif]
+             [table #:border-collapse collapse]
+             [table td th
+                    #:border (1px solid black)
+                    #:padding 5px]
+
+             [td.srfi-number #:text-align center]
+
+             [td.srfi-status
+              #:text-align center
+              #:font-variant small-caps]
+             [td.srfi-status.draft
+              #:background-color lightyellow]
+             [td.srfi-status.draft::after
+              #:content "draft"]
+             [td.srfi-status.final
+              #:background-color lightgreen]
+             [td.srfi-status.final::after
+              #:content "final"]
+             [td.srfi-status.withdrawn
+              #:background-color lightblue]
+             [td.srfi-status.withdrawn::after
+              #:content "withdrawn"]
+
+            [td.volunteer-status
+             #:text-align center]
+            [td.volunteer-status.ok
+             #:background-color lightgreen]
+            [td.volunteer-status.ok::after
+             #:content "\u2714"]
+            [td.volunteer-status.pending
+             #:background-color lightyellow]
+            [td.volunteer-status.pending::after
+             #:content "\u2715"])))
+     (body
+      (h1 "SRFI Status Dashboard")
+      (table
+       (tr
+        (th ((colspan "2")) "SRFI")
+        (th "Status")
+        (th "Markup")
+        (th "Metadata")
+        (th "Types"))))))))
 
 (define-values (web-dispatch web-url)
   (dispatch-rules

@@ -3,7 +3,8 @@
 (define collection "srfi-server")
 
 (define deps
-  '("crypto"))
+  '("crypto"
+    "css-expr"))
 
 (define build-deps
   '())
