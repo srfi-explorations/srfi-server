@@ -9,6 +9,7 @@
  json
  net/url
  racket/match
+ racket/set
  racket/string
  web-server/servlet
  web-server/servlet-env)
@@ -106,11 +107,34 @@
          (sig-body (github-sha1 req-bytes)))
     (bytes=? sig-head sig-body)))
 
-(define (github-archive-url repository commit-hash)
+(define (github-zip-url repository commit-hash)
   (let ((u (hash-ref repository 'archive_url)))
     (set! u (string-replace u "{archive_format}" "zipball"))
     (set! u (string-replace u "{/ref}" (string-append "/" commit-hash)))
     u))
+
+(define (read-srfi-zip zip-url basename-set)
+  (let ((files (make-hash)))
+    (call/input-url
+     (string->url zip-url)
+     (lambda (url) (get-pure-port url '() #:redirections 1))
+     (lambda (zip-port)
+       (unzip zip-port
+              (lambda (name-bytes dir? contents-port . _)
+                (unless dir?
+                  (let ((basename (some-system-path->string
+                                   (file-name-from-path
+                                    (bytes->string/utf-8 name-bytes)))))
+                    (when (set-member? basename-set basename)
+                      (let ((contents (bytes->string/utf-8
+                                       (port->bytes contents-port))))
+                        (hash-set! files basename contents)))))))))
+    files))
+
+(define (repo-name->srfi-number repo-name)
+  (match (regexp-match #rx"^srfi-([0-9]+)$" repo-name)
+    ((list _ srfi-number) (string->number srfi-number))
+    (else #f)))
 
 (define (web-admin-github req)
   (let* ((req-bytes (request-post-data/raw req)))
@@ -121,20 +145,34 @@
              (display j (current-error-port))
              (display #\newline (current-error-port))
              (let* ((repository (hash-ref j 'repository))
-                    (repo-name (hash-ref repository 'name)))
+                    (repo-name (hash-ref repository 'name))
+                    (srfi-number (repo-name->srfi-number repo-name)))
                (fprintf (current-error-port)
                         "The repo name is <~a>~n" repo-name)
-               (match (regexp-match #rx"^srfi-([1-9]\\d*)$" repo-name)
-                 ((list _ srfi-number)
-                  (let ((srfi-number (string->number srfi-number)))
-                    (fprintf (current-error-port)
-                             "The repo SRFI number is <~a>~n" srfi-number)))
-                 (else
-                  (fprintf (current-error-port) "This is not a SRFI repo")))
-               (fprintf (current-error-port)
-                        "The archive download link is <~a>~n"
-                        (let ((commit-hash (hash-ref j 'after)))
-                          (github-archive-url repository commit-hash)))
+               (cond ((not srfi-number)
+                      (fprintf (current-error-port)
+                               "This is not a SRFI repo~n"))
+                     (else
+                      (fprintf (current-error-port)
+                               "The repo SRFI number is <~a>~n" srfi-number)
+                      (let* ((commit-hash (hash-ref j 'after))
+                             (zip-url (github-zip-url repository commit-hash)))
+                        (fprintf (current-error-port)
+                                 "The zip URL is <~a>~n" zip-url)
+                        (fprintf (current-error-port)
+                                 "Reading filenames from zip...~n")
+                        (hash-for-each
+                         (read-srfi-zip
+                          zip-url
+                          (set (string-append repo-name ".html")
+                               (string-append repo-name "-args.scm")
+                               (string-append repo-name "-info.scm")
+                               (string-append repo-name "-info-add.scm")))
+                         (lambda (basename contents)
+                           (fprintf (current-error-port)
+                                    "The zip contains <~a> (length <~a>)~n"
+                                    basename (string-length contents)))
+                                    zip-url))))
                (response/xexpr '(html (body (h1 "OK"))))))))))
 
 (define (web-main-page req)
