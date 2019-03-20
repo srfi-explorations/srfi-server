@@ -4,7 +4,8 @@
 
 (define deps
   '("crypto"
-    "css-expr"))
+    "css-expr"
+    "r7rs"))
 
 (define build-deps
   '())
