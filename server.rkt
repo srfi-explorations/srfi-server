@@ -107,7 +107,7 @@
                          (lambda (basename contents)
                            (fprintf (current-error-port)
                                     "The zip contains <~a> (length <~a>)~n"
-                                    basename (string-length contents))
+                                    basename (bytes-length contents))
                            (when (equal? basename (string-append repo-name ".html"))
                              (process-html-port (open-input-bytes contents)))))
                         zip-url)))
