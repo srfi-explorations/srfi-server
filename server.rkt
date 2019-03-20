@@ -12,7 +12,8 @@
  web-server/servlet-env
  "util.rkt"
  "database.rkt"
- "github.rkt")
+ "github.rkt"
+ "srfi-tool/srfi-tool.rkt")
 
 ;;;
 
@@ -62,8 +63,7 @@
                                    (file-name-from-path
                                     (bytes->string/utf-8 name-bytes)))))
                     (when (set-member? basename-set basename)
-                      (let ((contents (bytes->string/utf-8
-                                       (port->bytes contents-port))))
+                      (let ((contents (port->bytes contents-port)))
                         (hash-set! files basename contents)))))))))
     files))
 
@@ -107,8 +107,10 @@
                          (lambda (basename contents)
                            (fprintf (current-error-port)
                                     "The zip contains <~a> (length <~a>)~n"
-                                    basename (string-length contents)))
-                                    zip-url))))
+                                    basename (string-length contents))
+                           (when (equal? basename (string-append repo-name ".html"))
+                             (process-html-port (open-input-bytes contents)))))
+                        zip-url)))
                (response/xexpr '(html (body (h1 "OK"))))))))))
 
 (define (web-main-page req)

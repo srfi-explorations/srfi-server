@@ -1,11 +1,13 @@
 (import
  (scheme base)
  (scheme r5rs)
- (srfi 1)
- (srfi 6)
- (srfi 23)
- (srfi 130)
- (chibi html-parser))
+ ;;(srfi 1)
+ ;;(srfi 6)
+ ;;(srfi 23)
+ ;;(srfi 130)
+ )
+
+;; (chibi html-parser)
 
 ;;
 
@@ -33,7 +35,9 @@
                (loop (+ i 1) (cdr list))))))
 
 (define (string-has-char? string ch)
-  (not (= 0 (string-count string (lambda (c) (equal? ch c))))))
+  (let ((found? #f))
+    (string-for-each (lambda (c) (set! found? (or found? (equal? ch c)))))
+    found?))
 
 (define (print-to-string x)
   (let ((out (open-output-string)))
@@ -88,7 +92,7 @@
               (else (set! i (min (+ i 1) (string-length s)))
                     char))))))
 
-(define (read-while rd k)
+(define (read-while* rd k)
   (let ((out (open-output-string)))
     (let loop ()
       (let ((char (rd k)))
@@ -98,7 +102,7 @@
             (begin (write-char char out)
                    (loop)))))))
 
-(define (skip-whitespace rd)
+(define (skip-whitespace* rd)
   (let loop ()
     (if (rd (lambda (c) (and (char? c) (char-whitespace? c))))
         (loop))))
@@ -115,11 +119,11 @@
   (and (char? ch) (string-has-char? symbol-safe ch)))
 
 (define (read-symbol rd)
-  (read-while rd symbol-char?))
+  (read-while* rd symbol-char?))
 
 (define (read-things rd closing)
   (let loop ((things '()))
-    (skip-whitespace rd)
+    (skip-whitespace* rd)
     (if (rd closing)
         (reverse things)
         (loop (cons (read-sexp rd) things)))))
@@ -128,7 +132,7 @@
   (if (rd opening) (constructor (read-things rd closing)) #f))
 
 (define (read-sexp rd)
-  (skip-whitespace rd)
+  (skip-whitespace* rd)
   (cond ((read-list rd #\( #\) list))
         ((read-list rd #\[ #\] (lambda xs (cons 'optional xs))))
         ((read-symbol rd))
@@ -141,11 +145,57 @@
 
 ;;
 
+(define (string-prefix? small big)
+  (and (>= (string-length big) (string-length small))
+       (string=? small (substring big 0 (string-length small)))))
+
+(define (string-suffix? small big)
+  (and (>= (string-length big) (string-length small))
+       (string=? small (substring big (- (string-length big)
+                                         (string-length small))))))
+
+(define (string-split-at-spaces s)
+  (let ((n (string-length s)))
+    (let loop ((a 0) (parts '()))
+      (cond ((>= a n)
+             (reverse parts))
+            ((char-whitespace? (string-ref s a))
+             (loop (+ a 1) parts))
+            (else
+             (let ((b (let inner-loop ((b a))
+                        (cond ((>= b n) n)
+                              ((char-whitespace? (string-ref s b)) b)
+                              (else (inner-loop (+ b 1)))))))
+               (loop b (cons (substring s a b) parts))))))))
+
+(define (string-trim-both s)
+  (let ((n (string-length s)))
+    (let ((a (let loop ((a 0))
+               (cond ((>= a n) n)
+                     ((char-whitespace? (string-ref s a)) (loop (+ a 1)))
+                     (else a))))
+          (b (let loop ((b n))
+               (cond ((<= b 0) 0)
+                     ((char-whitespace? (string-ref s (- b 1))) (loop (- b 1)))
+                     (else b)))))
+      (substring s a b))))
+
+(define (filter predicate list)
+  (let loop ((list list) (acc '()))
+    (if (null? list)
+        (reverse acc)
+        (loop (cdr list)
+              (if (predicate (car list)) (cons (car list) acc) acc)))))
+
+(define (string-remove predicate s)
+  (list->string (filter predicate (string->list s))))
+
+(define (remove predicate list)
+  (filter (lambda (x) (not (predicate x))) list))
+
 (define (html-classes elem)
   (let ((classes (assoc 'class (sxml-attributes elem))))
-    (if classes
-        (string-split (cadr classes) " ")
-        '())))
+    (string-split-at-spaces (if classes (cadr classes) ""))))
 
 (define (cleanup s)
   (string-trim-both
@@ -231,7 +281,7 @@
 
 ;;
 
-(define (process-file html-filename)
+(define (process-html-port html-port)
   (for-each-def (lambda (text type)
                   (case type
                     ('syntax
@@ -244,7 +294,10 @@
                     (else
                      (error "Unknown def type")))
                   (newline))
-                (call-with-input-file html-filename html->sxml)))
+                (html->sxml html-port)))
+
+(define (process-html-file html-filename)
+  (call-with-input-file html-filename process-html-port))
 
 (define (main arguments)
-  (for-each process-file (cdr arguments)))
+  (for-each process-html-file (cdr arguments)))
