@@ -168,15 +168,15 @@
                               (else (inner-loop (+ b 1)))))))
                (loop b (cons (substring s a b) parts))))))))
 
-(define (string-trim-both s)
+(define (string-trim-both s predicate)
   (let ((n (string-length s)))
     (let ((a (let loop ((a 0))
                (cond ((>= a n) n)
-                     ((char-whitespace? (string-ref s a)) (loop (+ a 1)))
+                     ((predicate (string-ref s a)) (loop (+ a 1)))
                      (else a))))
           (b (let loop ((b n))
                (cond ((<= b 0) 0)
-                     ((char-whitespace? (string-ref s (- b 1))) (loop (- b 1)))
+                     ((predicate (string-ref s (- b 1))) (loop (- b 1)))
                      (else b)))))
       (substring s a b))))
 
