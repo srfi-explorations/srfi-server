@@ -262,7 +262,7 @@
 (define (parse-proc-def s syntax?)
   (debug "parse-proc-def: " (print-to-string s))
   (let ((things (read-all-sexps (make-string-reader s))))
-    (if (and (pair? (car things)) (pair? (caar things)))
+    (if (and (pair? things) (pair? (car things)) (pair? (caar things)))
         (set! things (caar things)))
     `(,(if syntax? 'syntax 'procedure)
       ,(car things)
