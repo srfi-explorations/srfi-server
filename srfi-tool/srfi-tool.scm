@@ -264,6 +264,8 @@
   (let ((things (read-all-sexps (make-string-reader s))))
     (if (and (pair? things) (pair? (car things)) (pair? (caar things)))
         (set! things (caar things)))
+    (unless (pair? things)
+      (error "Empty proc def"))
     `(,(if syntax? 'syntax 'procedure)
       ,(car things)
       ,@(parse-arg-list (cdr things) (if syntax? '(syntax) '())))))
