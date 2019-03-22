@@ -4,6 +4,7 @@
  db/base
  db/postgresql
  json
+ net/base64
  net/url
  racket/match
  racket/set
@@ -42,7 +43,7 @@
               (string-append "create table if not exists srfi ("
                              "  srfi_number integer not null,"
                              "  srfi_suffix text not null,"
-                             "  contents blob not null,"
+                             "  contents text not null,"
                              "  primary key (srfi_number, srfi_suffix)"
                              ");")))
 
@@ -50,7 +51,7 @@
   (query-exec database-connection
               (string-append "update srfi set contents = $3"
                              " where srfi_number = $1 and srfi_suffix = $2;")
-              contents
+              (base64-encode contents "")
               srfi-number
               srfi-suffix))
 
