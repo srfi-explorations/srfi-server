@@ -4,6 +4,7 @@
  file/unzip
  racket/hash
  racket/match
+ racket/pretty
  rackunit
  "srfi-tool/srfi-tool.rkt")
 
@@ -65,8 +66,43 @@
           (handle-entry (bytes->string/utf-8 name-bytes)
                         (lambda () (port->bytes contents-port)))))))))
 
+(define (mcons-tree->immutable tree)
+  (cond ((mpair? tree)
+         (cons (mcons-tree->immutable (mcar tree))
+               (mcons-tree->immutable (mcdr tree))))
+        ((pair? tree)
+         (cons (mcons-tree->immutable (car tree))
+               (mcons-tree->immutable (cdr tree))))
+        (else tree)))
+
+(define (display-lists lists out)
+  (for-each (lambda (list)
+              (let ((first? #t))
+                (for-each (lambda (item)
+                            (unless first? (newline out))
+                            (display (if first? "(" " ") out)
+                            (display item out)
+                            (set! first? #f))
+                          list)
+                (unless (null? list)
+                  (display ")" out))
+                (newline out)
+                (newline out)))
+            lists))
+
+(define (sexp-bytes lists)
+  (string->bytes/utf-8
+   (call-with-output-string
+    (lambda (out)
+      (display-lists lists out)))))
+
+(define (derive-args-from-html* html-bytes)
+  (mcons-tree->immutable
+   (call-with-input-string (bytes->string/utf-8 html-bytes)
+                           process-html-port)))
+
 (define (derive-args-from-html html-bytes)
-  (call-with-input-string (bytes->string/utf-8 html-bytes) process-html-port))
+  (sexp-bytes (derive-args-from-html* html-bytes)))
 
 (define (derive-srfi-files-1 srfi-files-1)
   (let ((derived-files-1 (hash-copy srfi-files-1)))
@@ -102,7 +138,9 @@
   (call-with-input-file filename display-srfi-files-from-zip-port))
 
 (provide
+ display-srfi-files
  derive-srfi-files
+ derive-args-from-html*
  gather-srfi-files-from-zip-port
  display-srfi-files-from-zip-port
  display-srfi-files-from-zip-file)

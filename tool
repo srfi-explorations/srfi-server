@@ -18,6 +18,10 @@
       (verbose #t)]
      #:args (filename)
      filename))
-  (display-srfi-files-from-zip-file filename))
+  (hash-for-each
+   (derive-srfi-files
+    (call-with-input-file filename gather-srfi-files-from-zip-port))
+   (lambda (srfi-number srfi-files-1)
+     (display (hash-ref srfi-files-1 "-args.scm")))))
 
 (main)
