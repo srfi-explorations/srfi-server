@@ -33,14 +33,6 @@
                  empty
                  (list (string->bytes/utf-8 body))))
 
-(define (web-html-response code message headers body)
-  (response/full code
-                 (string->bytes/utf-8 message)
-                 (current-seconds)
-                 (string->bytes/utf-8 "text/html; charset=utf-8")
-                 headers
-                 (list (string->bytes/utf-8 body))))
-
 (define (web-error-response status-code status-text)
   (response/full status-code
                  (string->bytes/utf-8 status-text)
