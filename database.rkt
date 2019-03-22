@@ -46,4 +46,26 @@
                              "  primary key (srfi_number, srfi_suffix)"
                              ");")))
 
-(provide database-initialize)
+(define (database-set-srfi-file! srfi-number srfi-suffix contents)
+  (query-exec database-connection
+              (string-append "update srfi set contents = $3"
+                             " where srfi_number = $1 and srfi_suffix = $2;")
+              contents
+              srfi-number
+              srfi-suffix))
+
+(define (database-set-srfi-files! srfi-files)
+  (call-with-transaction
+   database-connection
+   (lambda ()
+     (hash-for-each
+      srfi-files
+      (lambda (srfi-number srfi-files-1)
+        (hash-for-each
+         srfi-files-1
+         (lambda (srfi-suffix contents)
+           (database-set-srfi-file! srfi-number srfi-suffix contents))))))))
+
+(provide
+ database-initialize
+ database-set-srfi-files!)

@@ -83,7 +83,8 @@
                         (call/input-url
                          (string->url zip-url)
                          (lambda (url) (get-pure-port url '() #:redirections 1))
-                         display-srfi-files-from-zip-port))))
+                         (compose database-set-srfi-files!
+                                  gather-srfi-files-from-zip-port)))))
                (response/xexpr '(html (body (h1 "OK"))))))))))
 
 (define (web-main-page req)
