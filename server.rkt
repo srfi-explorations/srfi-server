@@ -26,14 +26,14 @@
 ;;;
 
 (define (web-text-bytes-response body)
-  (response/full 200 "OK"
+  (response/full 200 #"OK"
                  (current-seconds)
                  (string->bytes/utf-8 "text/plain; charset=utf-8")
                  empty
                  (list body)))
 
 (define (web-html-bytes-response body)
-  (response/full 200 "OK"
+  (response/full 200 #"OK"
                  (current-seconds)
                  (string->bytes/utf-8 "text/html; charset=utf-8")
                  empty
