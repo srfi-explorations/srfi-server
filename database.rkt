@@ -42,7 +42,7 @@
               (string-append "create table if not exists srfi ("
                              "  srfi_number integer not null,"
                              "  srfi_suffix text not null,"
-                             "  contents text not null,"
+                             "  contents blob not null,"
                              "  primary key (srfi_number, srfi_suffix)"
                              ");")))
 
