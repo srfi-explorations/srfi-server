@@ -13,7 +13,7 @@
  "util.rkt"
  "database.rkt"
  "github.rkt"
- "srfi-tool/srfi-tool.rkt")
+ "srfi-files.rkt")
 
 ;;;
 
@@ -50,14 +50,6 @@
 (define (web-unauthorized req)
   (web-error-response 403 "Forbidden"))
 
-(define (read-srfi-zip zip-url basename-set)
-  (let ((files (make-hash)))
-    (call/input-url
-     (string->url zip-url)
-     (lambda (url) (get-pure-port url '() #:redirections 1))
-     my-unzip)
-    files))
-
 (define (repo-name->srfi-number repo-name)
   (match (regexp-match #rx"^srfi-([0-9]+)$" repo-name)
     ((list _ srfi-number) (string->number srfi-number))
@@ -87,21 +79,11 @@
                         (fprintf (current-error-port)
                                  "The zip URL is <~a>~n" zip-url)
                         (fprintf (current-error-port)
-                                 "Reading filenames from zip...~n")
-                        (hash-for-each
-                         (read-srfi-zip
-                          zip-url
-                          (set (string-append repo-name ".html")
-                               (string-append repo-name "-args.scm")
-                               (string-append repo-name "-info.scm")
-                               (string-append repo-name "-info-add.scm")))
-                         (lambda (basename contents)
-                           (fprintf (current-error-port)
-                                    "The zip contains <~a> (length <~a>)~n"
-                                    basename (bytes-length contents))
-                           (when (equal? basename (string-append repo-name ".html"))
-                             (process-html-port (open-input-bytes contents)))))
-                        zip-url)))
+                                 "Reading zip...~n")
+                        (call/input-url
+                         (string->url zip-url)
+                         (lambda (url) (get-pure-port url '() #:redirections 1))
+                         display-srfi-files-from-zip-port))))
                (response/xexpr '(html (body (h1 "OK"))))))))))
 
 (define (web-main-page req)
