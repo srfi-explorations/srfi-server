@@ -40,10 +40,10 @@
 (define (database-initialize database-url)
   (query-exec database-connection
               (string-append "create table if not exists srfi ("
-                             "  srfinumber integer not null,"
-                             "  filename text not null,"
+                             "  srfi_number integer not null,"
+                             "  srfi_suffix text not null,"
                              "  contents text not null,"
-                             "  primary key (srfinumber, filename)"
+                             "  primary key (srfi_number, srfi_suffix)"
                              ");")))
 
 (provide database-initialize)
