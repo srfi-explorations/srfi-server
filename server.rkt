@@ -55,16 +55,7 @@
     (call/input-url
      (string->url zip-url)
      (lambda (url) (get-pure-port url '() #:redirections 1))
-     (lambda (zip-port)
-       (unzip zip-port
-              (lambda (name-bytes dir? contents-port . _)
-                (unless dir?
-                  (let ((basename (some-system-path->string
-                                   (file-name-from-path
-                                    (bytes->string/utf-8 name-bytes)))))
-                    (when (set-member? basename-set basename)
-                      (let ((contents (port->bytes contents-port)))
-                        (hash-set! files basename contents)))))))))
+     my-unzip)
     files))
 
 (define (repo-name->srfi-number repo-name)
@@ -145,25 +136,25 @@
              [td.srfi-status.withdrawn::after
               #:content "withdrawn"]
 
-            [td.volunteer-status
-             #:text-align center]
-            [td.volunteer-status.ok
-             #:background-color lightgreen]
-            [td.volunteer-status.ok::after
-             #:content "\u2714"]
-            [td.volunteer-status.pending
-             #:background-color lightyellow]
-            [td.volunteer-status.pending::after
-             #:content "\u2715"])))
-     (body
-      (h1 "SRFI Status Dashboard")
-      (table
-       (tr
-        (th ((colspan "2")) "SRFI")
-        (th "Status")
-        (th "Markup")
-        (th "Metadata")
-        (th "Types"))))))))
+             [td.volunteer-status
+              #:text-align center]
+             [td.volunteer-status.ok
+              #:background-color lightgreen]
+             [td.volunteer-status.ok::after
+              #:content "\u2714"]
+             [td.volunteer-status.pending
+              #:background-color lightyellow]
+             [td.volunteer-status.pending::after
+              #:content "\u2715"])))
+      (body
+       (h1 "SRFI Status Dashboard")
+       (table
+        (tr
+         (th ((colspan "2")) "SRFI")
+         (th "Status")
+         (th "Markup")
+         (th "Metadata")
+         (th "Types"))))))))
 
 (define-values (web-dispatch web-url)
   (dispatch-rules
