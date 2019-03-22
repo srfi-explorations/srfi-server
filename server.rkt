@@ -25,13 +25,21 @@
 
 ;;;
 
-(define (web-text-response body)
-  (response/full 200
-                 "OK"
+(define (web-text-bytes-response body)
+  (response/full 200 "OK"
                  (current-seconds)
                  (string->bytes/utf-8 "text/plain; charset=utf-8")
                  empty
-                 (list (string->bytes/utf-8 body))))
+                 (list body)))
+
+(define (web-html-bytes-response body)
+  (response/full 200 "OK"
+                 (current-seconds)
+                 (string->bytes/utf-8 "text/html; charset=utf-8")
+                 empty
+                 (list body)))
+
+;;
 
 (define (web-error-response status-code status-text)
   (response/full status-code
@@ -139,15 +147,17 @@
          (th "Metadata")
          (th "Types"))))))))
 
-(define (web-api-srfi-file srfi-suffix req srfi-number)
+(define (web-api-srfi-file send-response srfi-suffix req srfi-number)
   (let ((contents (database-get-srfi-file srfi-number srfi-suffix)))
     (if (not contents)
         (web-not-found req)
-        (web-text-response contents))))
+        (send-response contents))))
 
-(define web-api-srfi-args (curry web-api-srfi-file "-args.scm"))
+(define web-api-srfi-args
+  (curry web-api-srfi-file web-text-bytes-response "-args.scm"))
 
-(define web-api-srfi-html (curry web-api-srfi-file ".html"))
+(define web-api-srfi-html
+  (curry web-api-srfi-file web-html-bytes-response ".html"))
 
 (define-values (web-dispatch web-url)
   (dispatch-rules
