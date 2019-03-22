@@ -147,18 +147,22 @@
          (th "Metadata")
          (th "Types"))))))))
 
-(define (web-api-srfi-args req srfi-number)
-  (let ((contents (database-get-srfi-file srfi-number "-args.scm")))
+(define (web-api-srfi-file srfi-suffix req srfi-number)
+  (let ((contents (database-get-srfi-file srfi-number srfi-suffix)))
     (if (not contents)
         (web-not-found req)
         (web-text-response contents))))
+
+(define web-api-srfi-args (curry web-api-srfi-file "-args.scm"))
+
+(define web-api-srfi-html (curry web-api-srfi-file ".html"))
 
 (define-values (web-dispatch web-url)
   (dispatch-rules
    [("")
     web-main-page]
-   [("api" "v0" "srfi" (integer-arg) "args")
-    web-api-srfi-args]
+   [("api" "v0" "srfi" (integer-arg) "args") web-api-srfi-args]
+   [("api" "v0" "srfi" (integer-arg) "html") web-api-srfi-html]
    [("admin" "github")
     #:method "post"
     web-admin-github]
