@@ -29,7 +29,7 @@
   (response/full code
                  (string->bytes/utf-8 message)
                  (current-seconds)
-                 (string->bytes/utf-8 "text-html; charset=utf-8")
+                 (string->bytes/utf-8 "text/html; charset=utf-8")
                  headers
                  (list (string->bytes/utf-8 body))))
 
