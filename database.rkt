@@ -49,8 +49,8 @@
 
 (define (database-set-srfi-file! srfi-number srfi-suffix contents)
   (query-exec database-connection
-              (string-append "update srfi set contents = $3"
-                             " where srfi_number = $1 and srfi_suffix = $2;")
+              (string-append "update srfi set contents = $1"
+                             " where srfi_number = $2 and srfi_suffix = $3;")
               (base64-encode contents "")
               srfi-number
               srfi-suffix))
