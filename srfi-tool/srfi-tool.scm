@@ -188,7 +188,7 @@
               (if (predicate (car list)) (cons (car list) acc) acc)))))
 
 (define (string-remove predicate s)
-  (list->string (filter predicate (string->list s))))
+  (list->string (filter (lambda (x) (not (predicate x))) (string->list s))))
 
 (define (remove predicate list)
   (filter (lambda (x) (not (predicate x))) list))
