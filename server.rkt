@@ -154,6 +154,9 @@
         (web-not-found req)
         (send-response contents))))
 
+(define web-api-srfi-info
+  (curry web-api-srfi-file web-text-bytes-response "-info.scm"))
+
 (define web-api-srfi-args
   (curry web-api-srfi-file web-text-bytes-response "-args.scm"))
 
@@ -164,6 +167,7 @@
   (dispatch-rules
    [("")
     web-main-page]
+   [("api" "v0" "srfi" (integer-arg) "info") web-api-srfi-info]
    [("api" "v0" "srfi" (integer-arg) "args") web-api-srfi-args]
    [("api" "v0" "srfi" (integer-arg) "html") web-api-srfi-html]
    [("admin" "github")

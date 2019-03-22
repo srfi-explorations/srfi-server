@@ -298,6 +298,14 @@
      (html->sxml html-port))
     defs))
 
+(define (process-html-port-general html-port)
+  (let ((title #f))
+    (sxml-for-each (lambda (elem)
+                     (cond ((equal? 'title (car elem))
+                            (set! title (sxml-text elem)))))
+                   (html->sxml html-port))
+    `((srfi (title ,title)))))
+
 (define (process-html-file html-filename)
   (call-with-input-file html-filename process-html-port))
 

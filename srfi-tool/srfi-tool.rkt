@@ -5,4 +5,4 @@
 (include "html-parser.sld")
 (include "srfi-tool.scm")
 
-(export process-html-port process-html-file)
+(export process-html-port process-html-port-general)

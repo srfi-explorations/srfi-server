@@ -81,7 +81,7 @@
                 (for-each (lambda (item)
                             (unless first? (newline out))
                             (display (if first? "(" " ") out)
-                            (display item out)
+                            (write item out)
                             (set! first? #f))
                           list)
                 (unless (null? list)
@@ -96,10 +96,20 @@
     (lambda (out)
       (display-lists lists out)))))
 
-(define (derive-args-from-html* html-bytes)
+(define (displayable process-port html-bytes)
   (mcons-tree->immutable
    (call-with-input-string (bytes->string/utf-8 html-bytes)
-                           process-html-port)))
+                           process-port)))
+
+(define derive-info-from-html*
+  (curry displayable process-html-port-general))
+
+(define derive-args-from-html*
+  (curry displayable process-html-port))
+
+(define (derive-info-from-html html-bytes)
+  (let ((info (derive-info-from-html* html-bytes)))
+    (sexp-bytes (if (list? info) info '()))))
 
 (define (derive-args-from-html html-bytes)
   (sexp-bytes (derive-args-from-html* html-bytes)))
@@ -109,6 +119,8 @@
     (hash-map srfi-files-1
               (lambda (srfi-suffix contents)
                 (when (equal? ".html" srfi-suffix)
+                  (hash-set! derived-files-1 "-info.scm"
+                             (derive-info-from-html contents))
                   (hash-set! derived-files-1 "-args.scm"
                              (derive-args-from-html contents)))))
     derived-files-1))

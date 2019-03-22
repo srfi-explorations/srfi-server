@@ -22,6 +22,7 @@
    (derive-srfi-files
     (call-with-input-file filename gather-srfi-files-from-zip-port))
    (lambda (srfi-number srfi-files-1)
+     (display (hash-ref srfi-files-1 "-info.scm"))
      (display (hash-ref srfi-files-1 "-args.scm")))))
 
 (main)
