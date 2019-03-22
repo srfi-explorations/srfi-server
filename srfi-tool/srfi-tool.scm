@@ -36,7 +36,8 @@
 
 (define (string-has-char? string ch)
   (let ((found? #f))
-    (string-for-each (lambda (c) (set! found? (or found? (equal? ch c)))))
+    (string-for-each (lambda (c) (set! found? (or found? (equal? ch c))))
+                     string)
     found?))
 
 (define (print-to-string x)
