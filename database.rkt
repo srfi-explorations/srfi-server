@@ -52,7 +52,7 @@
          (query-value
           database-connection
           (string-append "select contents from srfi"
-                         " where srfi_number = $2 and srfi_suffix = $3;")
+                         " where srfi_number = $1 and srfi_suffix = $2;")
           srfi-number
           srfi-suffix)))
     (if contents (base64-decode contents) #f)))
