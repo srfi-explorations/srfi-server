@@ -2,6 +2,7 @@
 
 (require
  file/unzip
+ racket/hash
  racket/match
  rackunit
  "srfi-tool/srfi-tool.rkt")
@@ -54,7 +55,7 @@
                       (get-contents))))))
     srfi-files))
 
-(define (gather-srfi-files-from-zip zip-input-port)
+(define (gather-srfi-files-from-zip-port zip-input-port)
   (gather-srfi-files
    (lambda (handle-entry)
      (unzip
@@ -64,27 +65,42 @@
           (handle-entry (bytes->string/utf-8 name-bytes)
                         (lambda () (port->bytes contents-port)))))))))
 
+(define (derive-args-from-html html-bytes)
+  (call-with-input-string (bytes->string/utf-8 html-bytes) process-html-port))
+
+(define (derive-srfi-files-1 srfi-files-1)
+  (let ((derived-files-1 (make-hash)))
+    (hash-map srfi-files-1
+              (lambda (srfi-suffix contents)
+                (when (equal? ".html" srfi-suffix)
+                  (hash-set! derived-files-1 "-args.scm"
+                             (derive-args-from-html contents)))))
+    (hash-union srfi-files-1 derived-files-1
+                #:combine (lambda (_ derived) derived))))
+
+(define (derive-srfi-files! srfi-files)
+  (hash-for-each srfi-files
+                 (lambda (srfi-number srfi-files-1)
+                   (hash-set! srfi-files srfi-number
+                              (derive-srfi-files-1 srfi-files-1)))))
+
 (define (display-srfi-files srfi-files)
-  (for-each (lambda (srfi-number)
-              (hash-map (hash-ref srfi-files srfi-number)
-                        (lambda (srfi-suffix contents)
-                          (when (equal? ".html" srfi-suffix)
-                            (for-each display (list srfi-number " " srfi-suffix))
-                            (newline)
-                            (call-with-input-bytes
-                             contents
-                             (lambda (port)
-                               (call-with-input-string
-                                (bytes->string/utf-8 (port->bytes port))
-                                process-html-port)))))))
-            (sort (hash-keys srfi-files) <)))
+  (for-each
+   (lambda (srfi-number)
+     (hash-for-each
+      (hash-ref srfi-files srfi-number)
+      (lambda (srfi-suffix contents)
+        (for-each display (list srfi-number " " srfi-suffix))
+        (newline))))
+   (sort (hash-keys srfi-files) <)))
 
 (define (display-srfi-files-from-zip-port zip-input-port)
-  (display-srfi-files (gather-srfi-files-from-zip zip-input-port)))
+  (display-srfi-files (gather-srfi-files-from-zip-port zip-input-port)))
 
 (define (display-srfi-files-from-zip-file filename)
   (call-with-input-file filename display-srfi-files-from-zip-port))
 
 (provide
+ gather-srfi-files-from-zip-port
  display-srfi-files-from-zip-port
  display-srfi-files-from-zip-file)

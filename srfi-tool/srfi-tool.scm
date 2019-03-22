@@ -285,19 +285,18 @@
 ;;
 
 (define (process-html-port html-port)
-  (for-each-def (lambda (text type)
-                  (case type
-                    ('syntax
-                     (display-list (parse-proc-def text #t)))
-                    ('proc
-                     (display-list (parse-proc-def text #f)))
-                    ('variable
-                     (display-list
-                      `(variable ,@(read-all-sexps (make-string-reader text)))))
-                    (else
-                     (error "Unknown def type")))
-                  (newline))
-                (html->sxml html-port)))
+  (let ((defs '()))
+    (for-each-def
+     (lambda (text type)
+       (let ((def (case type
+                    ('syntax (parse-proc-def text #t))
+                    ('proc (parse-proc-def text #f))
+                    ('variable `(variable ,@(read-all-sexps
+                                             (make-string-reader text))))
+                    (else (error "Unknown def type")))))
+         (set! defs (append defs (list def)))))
+     (html->sxml html-port))
+    defs))
 
 (define (process-html-file html-filename)
   (call-with-input-file html-filename process-html-port))
