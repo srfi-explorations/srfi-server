@@ -92,6 +92,7 @@
                          (string->url zip-url)
                          (lambda (url) (get-pure-port url '() #:redirections 1))
                          (compose database-set-srfi-files!
+                                  derive-srfi-files
                                   gather-srfi-files-from-zip-port)))))
                (response/xexpr '(html (body (h1 "OK"))))))))))
 

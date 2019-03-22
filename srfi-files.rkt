@@ -78,11 +78,13 @@
     (hash-union srfi-files-1 derived-files-1
                 #:combine (lambda (_ derived) derived))))
 
-(define (derive-srfi-files! srfi-files)
-  (hash-for-each srfi-files
-                 (lambda (srfi-number srfi-files-1)
-                   (hash-set! srfi-files srfi-number
-                              (derive-srfi-files-1 srfi-files-1)))))
+(define (derive-srfi-files srfi-files)
+  (let ((derived-files (make-hash)))
+    (hash-for-each srfi-files
+                   (lambda (srfi-number srfi-files-1)
+                     (hash-set derived-files srfi-number
+                               (derive-srfi-files-1 srfi-files-1))))
+    derived-files))
 
 (define (display-srfi-files srfi-files)
   (for-each
@@ -101,6 +103,7 @@
   (call-with-input-file filename display-srfi-files-from-zip-port))
 
 (provide
+ derive-srfi-files
  gather-srfi-files-from-zip-port
  display-srfi-files-from-zip-port
  display-srfi-files-from-zip-file)
