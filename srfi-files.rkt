@@ -69,21 +69,20 @@
   (call-with-input-string (bytes->string/utf-8 html-bytes) process-html-port))
 
 (define (derive-srfi-files-1 srfi-files-1)
-  (let ((derived-files-1 (make-hash)))
+  (let ((derived-files-1 (hash-copy srfi-files-1)))
     (hash-map srfi-files-1
               (lambda (srfi-suffix contents)
                 (when (equal? ".html" srfi-suffix)
                   (hash-set! derived-files-1 "-args.scm"
                              (derive-args-from-html contents)))))
-    (hash-union srfi-files-1 derived-files-1
-                #:combine (lambda (_ derived) derived))))
+    derived-files-1))
 
 (define (derive-srfi-files srfi-files)
   (let ((derived-files (make-hash)))
     (hash-for-each srfi-files
                    (lambda (srfi-number srfi-files-1)
-                     (hash-set derived-files srfi-number
-                               (derive-srfi-files-1 srfi-files-1))))
+                     (hash-set! derived-files srfi-number
+                                (derive-srfi-files-1 srfi-files-1))))
     derived-files))
 
 (define (display-srfi-files srfi-files)
