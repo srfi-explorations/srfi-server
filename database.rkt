@@ -55,7 +55,9 @@
                          " where srfi_number = $1 and srfi_suffix = $2;")
           srfi-number
           srfi-suffix)))
-    (if contents (base64-decode contents) #f)))
+    (if contents
+        (base64-decode (string->bytes/utf-8 contents))
+        #f)))
 
 (define (database-set-srfi-file! srfi-number srfi-suffix contents)
   (query-exec database-connection
