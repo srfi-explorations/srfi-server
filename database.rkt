@@ -47,6 +47,16 @@
                              "  primary key (srfi_number, srfi_suffix)"
                              ");")))
 
+(define (database-get-srfi-file srfi-number srfi-suffix)
+  (let ((contents
+         (query-value
+          database-connection
+          (string-append "select contents from srfi"
+                         " where srfi_number = $2 and srfi_suffix = $3;")
+          srfi-number
+          srfi-suffix)))
+    (if contents (base64-decode contents) #f)))
+
 (define (database-set-srfi-file! srfi-number srfi-suffix contents)
   (query-exec database-connection
               (string-append
@@ -77,4 +87,5 @@
 
 (provide
  database-initialize
+ database-get-srfi-file
  database-set-srfi-files!)

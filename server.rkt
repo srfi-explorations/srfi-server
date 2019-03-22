@@ -25,6 +25,14 @@
 
 ;;;
 
+(define (web-text-response body)
+  (response/full 200
+                 "OK"
+                 (current-seconds)
+                 (string->bytes/utf-8 "text/plain; charset=utf-8")
+                 empty
+                 (list (string->bytes/utf-8 body))))
+
 (define (web-html-response code message headers body)
   (response/full code
                  (string->bytes/utf-8 message)
@@ -139,10 +147,18 @@
          (th "Metadata")
          (th "Types"))))))))
 
+(define (web-api-srfi-args req srfi-number)
+  (let ((contents (database-get-srfi-file srfi-number "-args.scm")))
+    (if (not contents)
+        (web-not-found req)
+        (web-text-response contents))))
+
 (define-values (web-dispatch web-url)
   (dispatch-rules
    [("")
     web-main-page]
+   [("api" "v0" "srfi" (integer-arg) "args")
+    web-api-srfi-args]
    [("admin" "github")
     #:method "post"
     web-admin-github]
