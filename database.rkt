@@ -49,6 +49,14 @@
 
 (define (database-set-srfi-file! srfi-number srfi-suffix contents)
   (query-exec database-connection
+              (string-append
+               "insert"
+               " into srfi (srfi_number, srfi_suffix, contents)"
+               " values ($1, $2, '')"
+               " on conflict (srfi_number, srfi_suffix) do nothing;")
+              srfi-number
+              srfi-suffix)
+  (query-exec database-connection
               (string-append "update srfi set contents = $1"
                              " where srfi_number = $2 and srfi_suffix = $3;")
               (bytes->string/utf-8 (base64-encode contents ""))
