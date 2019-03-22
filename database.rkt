@@ -49,7 +49,7 @@
 
 (define (database-get-srfi-file srfi-number srfi-suffix)
   (let ((contents
-         (query-value
+         (query-maybe-value
           database-connection
           (string-append "select contents from srfi"
                          " where srfi_number = $1 and srfi_suffix = $2;")
