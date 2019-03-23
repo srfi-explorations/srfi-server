@@ -156,8 +156,8 @@
                 #:text-align center]
                [td.volunteer-status.ok
                 #:background-color lightgreen]
-               [td.volunteer-status.ok::after
-                #:content "\u2714"]
+               ;;[td.volunteer-status.ok::after
+               ;; #:content "\u2714"]
                [td.volunteer-status.pending
                 #:background-color lightyellow]
                [td.volunteer-status.pending::after
