@@ -177,7 +177,8 @@
                           (info (parse-srfi-info
                                  (hash-ref srfi-files-1 "-info.scm" #""))))
                      `(tr
-                       (td ,(number->string srfi-number))
+                       (td ((class "srfi-number"))
+                           ,(number->string srfi-number))
                        (td ,(hash-ref info 'title))
                        (td ((class ,(string-join
                                      (list "srfi-status"
