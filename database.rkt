@@ -45,14 +45,14 @@
                              "  srfi_suffix text not null,"
                              "  contents text not null,"
                              "  primary key (srfi_number, srfi_suffix)"
-                             ");")))
+                             ")")))
 
 (define (database-get-srfi-file srfi-number srfi-suffix)
   (let ((contents
          (query-maybe-value
           database-connection
           (string-append "select contents from srfi"
-                         " where srfi_number = $1 and srfi_suffix = $2;")
+                         " where srfi_number = $1 and srfi_suffix = $2")
           srfi-number
           srfi-suffix)))
     (if contents
@@ -65,12 +65,12 @@
                "insert"
                " into srfi (srfi_number, srfi_suffix, contents)"
                " values ($1, $2, '')"
-               " on conflict (srfi_number, srfi_suffix) do nothing;")
+               " on conflict (srfi_number, srfi_suffix) do nothing")
               srfi-number
               srfi-suffix)
   (query-exec database-connection
               (string-append "update srfi set contents = $3"
-                             " where srfi_number = $1 and srfi_suffix = $2;")
+                             " where srfi_number = $1 and srfi_suffix = $2")
               srfi-number
               srfi-suffix
               (bytes->string/utf-8 (base64-encode contents ""))))
