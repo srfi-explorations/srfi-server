@@ -38,7 +38,7 @@
 (define database-connection
   (virtual-connection (connection-pool database-connect)))
 
-(define (database-initialize database-url)
+(define (database-initialize)
   (query-exec database-connection
               (string-append "create table if not exists srfi ("
                              "  srfi_number integer not null,"

@@ -20,9 +20,6 @@
 (define web-port
   (string->number (must-env "PORT")))
 
-(define database-url
-  (string->url (must-env "DATABASE_URL")))
-
 ;;;
 
 (define (web-text-bytes-response body)
@@ -235,5 +232,5 @@
                  #:servlet-path "/"
                  #:servlet-regexp #rx""))
 
-(database-initialize database-url)
+(database-initialize)
 (web-serve)
