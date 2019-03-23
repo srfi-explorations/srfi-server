@@ -49,19 +49,16 @@
 
 (define (database-get-srfi-table)
   (let ((srfi-table (make-hash)))
-    (call-with-transaction
-     database-connection
-     (lambda ()
-       (for-each
-        (lambda (row)
-          (match-let (((vector srfi-number srfi-suffix contents) row))
-            (hash-set! srfi-table srfi-number
-                       (hash-ref srfi-table srfi-number (make-hash)))
-            (hash-set! (hash-ref srfi-table srfi-number)
-                       srfi-suffix
-                       (base64-decode (string->bytes/utf-8 contents)))))
-        (query-rows database-connection
-                    "select srfi_number, srfi_suffix, contents from srfi"))))
+    (for-each
+     (lambda (row)
+       (match-let (((vector srfi-number srfi-suffix contents) row))
+         (hash-set! srfi-table srfi-number
+                    (hash-ref srfi-table srfi-number (make-hash)))
+         (hash-set! (hash-ref srfi-table srfi-number)
+                    srfi-suffix
+                    (base64-decode (string->bytes/utf-8 contents)))))
+     (query-rows database-connection
+                 "select srfi_number, srfi_suffix, contents from srfi"))
     srfi-table))
 
 (define (database-get-srfi-file srfi-number srfi-suffix)
@@ -76,22 +73,6 @@
         (base64-decode (string->bytes/utf-8 contents))
         #f)))
 
-(define (database-set-srfi-file! srfi-number srfi-suffix contents)
-  (query-exec database-connection
-              (string-append
-               "insert"
-               " into srfi (srfi_number, srfi_suffix, contents)"
-               " values ($1, $2, '')"
-               " on conflict (srfi_number, srfi_suffix) do nothing")
-              srfi-number
-              srfi-suffix)
-  (query-exec database-connection
-              (string-append "update srfi set contents = $3"
-                             " where srfi_number = $1 and srfi_suffix = $2")
-              srfi-number
-              srfi-suffix
-              (bytes->string/utf-8 (base64-encode contents ""))))
-
 (define (database-set-srfi-files! srfi-files)
   (call-with-transaction
    database-connection
@@ -102,7 +83,23 @@
         (hash-for-each
          srfi-files-1
          (lambda (srfi-suffix contents)
-           (database-set-srfi-file! srfi-number srfi-suffix contents))))))))
+           (query-exec
+            database-connection
+            (string-append
+             "insert"
+             " into srfi (srfi_number, srfi_suffix, contents)"
+             " values ($1, $2, '')"
+             " on conflict (srfi_number, srfi_suffix) do nothing")
+            srfi-number
+            srfi-suffix)
+           (query-exec
+            database-connection
+            (string-append
+             "update srfi set contents = $3"
+             " where srfi_number = $1 and srfi_suffix = $2")
+            srfi-number
+            srfi-suffix
+            (bytes->string/utf-8 (base64-encode contents ""))))))))))
 
 (provide
  database-initialize
