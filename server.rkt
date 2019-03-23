@@ -96,57 +96,101 @@
                                   gather-srfi-files-from-zip-port)))))
                (response/xexpr '(html (body (h1 "OK"))))))))))
 
+(define (cleanup-srfi-title title)
+  (match (regexp-match #rx"^SRFI[ -][0-9]+: (.*)$" title)
+    ((list _ real-title) real-title)
+    (else title)))
+
+(define (parse-srfi-info info-sexp-bytes)
+  (let* ((raw (call-with-input-string (bytes->string/utf-8 info-sexp-bytes) read))
+         (alist (if (pair? raw) (cdr raw) '()))
+         (table (make-hash)))
+    (hash-set! table 'title
+               (cleanup-srfi-title (cadr (or (assoc 'title alist) '(title "")))))
+    (hash-set! table 'status "final")
+    table))
+
+(define (srfi-html-url srfi-number)
+  (format "/file/srfi-~a.html" srfi-number))
+
+(define (srfi-info-url srfi-number)
+  (format "/file/srfi-~a-info.scm" srfi-number))
+
+(define (srfi-args-url srfi-number)
+  (format "/file/srfi-~a-args.scm" srfi-number))
+
 (define (web-main-page req)
-  (response/xexpr
-   `(html
-     (head
-      (title "SRFI Status Dashboard")
-      (style
-          ,(css-expr->css
-            (css-expr
-             [html #:font-family sans-serif]
-             [table #:border-collapse collapse]
-             [table td th
-                    #:border (1px solid black)
-                    #:padding 5px]
+  (let ((srfi-table (database-get-srfi-table)))
+    (response/xexpr
+     `(html
+       (head
+        (title "SRFI Status Dashboard")
+        (style
+            ,(css-expr->css
+              (css-expr
+               [html #:font-family sans-serif]
+               [table #:border-collapse collapse]
+               [table td th
+                      #:border (1px solid black)
+                      #:padding 5px]
 
-             [td.srfi-number #:text-align center]
+               [td.srfi-number #:text-align center]
 
-             [td.srfi-status
-              #:text-align center
-              #:font-variant small-caps]
-             [td.srfi-status.draft
-              #:background-color lightyellow]
-             [td.srfi-status.draft::after
-              #:content "draft"]
-             [td.srfi-status.final
-              #:background-color lightgreen]
-             [td.srfi-status.final::after
-              #:content "final"]
-             [td.srfi-status.withdrawn
-              #:background-color lightblue]
-             [td.srfi-status.withdrawn::after
-              #:content "withdrawn"]
+               [td.srfi-status
+                #:text-align center
+                #:font-variant small-caps]
+               [td.srfi-status.draft
+                #:background-color lightyellow]
+               [td.srfi-status.draft::after
+                #:content "draft"]
+               [td.srfi-status.final
+                #:background-color lightgreen]
+               [td.srfi-status.final::after
+                #:content "final"]
+               [td.srfi-status.withdrawn
+                #:background-color lightblue]
+               [td.srfi-status.withdrawn::after
+                #:content "withdrawn"]
 
-             [td.volunteer-status
-              #:text-align center]
-             [td.volunteer-status.ok
-              #:background-color lightgreen]
-             [td.volunteer-status.ok::after
-              #:content "\u2714"]
-             [td.volunteer-status.pending
-              #:background-color lightyellow]
-             [td.volunteer-status.pending::after
-              #:content "\u2715"])))
-      (body
-       (h1 "SRFI Status Dashboard")
-       (table
-        (tr
-         (th ((colspan "2")) "SRFI")
-         (th "Status")
-         (th "Markup")
-         (th "Metadata")
-         (th "Types"))))))))
+               [td.volunteer-status
+                #:text-align center]
+               [td.volunteer-status.ok
+                #:background-color lightgreen]
+               [td.volunteer-status.ok::after
+                #:content "\u2714"]
+               [td.volunteer-status.pending
+                #:background-color lightyellow]
+               [td.volunteer-status.pending::after
+                #:content "\u2715"])))
+        (body
+         (h1 "SRFI Status Dashboard")
+         (table
+          (tr
+           (th ((colspan "2")) "SRFI")
+           (th "Status")
+           (th "Markup")
+           (th "Info")
+           (th "Args")
+           (th "Types"))
+          ,@(map (lambda (srfi-number)
+                   (let* ((srfi-files-1 (hash-ref srfi-table srfi-number))
+                          (info (parse-srfi-info
+                                 (hash-ref srfi-files-1 "-info.scm" #""))))
+                     `(tr
+                       (td ,(number->string srfi-number))
+                       (td ,(hash-ref info 'title))
+                       (td ((class ,(string-join
+                                     (list "srfi-status"
+                                           (hash-ref info 'status))))))
+                       (td ((class ,(string-join '("volunteer-status" "ok"))))
+                           (a ((href ,(srfi-html-url srfi-number))) "html"))
+                       (td ((class ,(string-join '("volunteer-status" "ok"))))
+                           (a ((href ,(srfi-info-url srfi-number))) "scm"))
+                       (td ((class ,(string-join '("volunteer-status" "ok"))))
+                           (a ((href ,(srfi-args-url srfi-number))) "scm"))
+                       (td ((class ,(string-join '("volunteer-status"
+                                                   "pending"))))))))
+                 (sort (hash-keys srfi-table) <)))))))))
 
 (define (web-api-srfi-file send-response srfi-number srfi-suffix)
   (let ((contents (database-get-srfi-file srfi-number srfi-suffix)))

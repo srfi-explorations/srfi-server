@@ -47,6 +47,23 @@
                              "  primary key (srfi_number, srfi_suffix)"
                              ")")))
 
+(define (database-get-srfi-table)
+  (let ((srfi-table (make-hash)))
+    (call-with-transaction
+     database-connection
+     (lambda ()
+       (for-each
+        (lambda (row)
+          (match-let (((vector srfi-number srfi-suffix contents) row))
+            (hash-set! srfi-table srfi-number
+                       (hash-ref srfi-table srfi-number (make-hash)))
+            (hash-set! (hash-ref srfi-table srfi-number)
+                       srfi-suffix
+                       (base64-decode (string->bytes/utf-8 contents)))))
+        (query-rows database-connection
+                    "select srfi_number, srfi_suffix, contents from srfi"))))
+    srfi-table))
+
 (define (database-get-srfi-file srfi-number srfi-suffix)
   (let ((contents
          (query-maybe-value
@@ -89,5 +106,6 @@
 
 (provide
  database-initialize
+ database-get-srfi-table
  database-get-srfi-file
  database-set-srfi-files!)
