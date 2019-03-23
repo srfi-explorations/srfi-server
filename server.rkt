@@ -148,28 +148,34 @@
          (th "Metadata")
          (th "Types"))))))))
 
-(define (web-api-srfi-file send-response srfi-suffix req srfi-number)
+(define (web-api-srfi-file send-response srfi-number srfi-suffix)
   (let ((contents (database-get-srfi-file srfi-number srfi-suffix)))
     (if (not contents)
-        (web-not-found req)
+        (web-error-response 404 "We don't have that SRFI or that metadata file")
         (send-response contents))))
 
-(define web-api-srfi-info
-  (curry web-api-srfi-file web-text-bytes-response "-info.scm"))
-
-(define web-api-srfi-args
-  (curry web-api-srfi-file web-text-bytes-response "-args.scm"))
-
-(define web-api-srfi-html
-  (curry web-api-srfi-file web-html-bytes-response ".html"))
+(define (web-file req filename)
+  (let ((we-dont "We don't have any filenames of that form"))
+    (match (regexp-match #rx"^srfi-(0|[1-9][0-9]*)([.-].*)$" filename)
+      ((list _ srfi-number srfi-suffix)
+       (let ((srfi-number (string->number srfi-number)))
+         (case srfi-suffix
+           ((".html")
+            (web-api-srfi-file web-html-bytes-response srfi-number ".html"))
+           (("-args.scm")
+            (web-api-srfi-file web-text-bytes-response srfi-number "-args.scm"))
+           (("-info.scm")
+            (web-api-srfi-file web-text-bytes-response srfi-number "-info.scm"))
+           (else
+            (web-error-response 404 we-dont)))))
+      (else
+       (web-error-response 404 we-dont)))))
 
 (define-values (web-dispatch web-url)
   (dispatch-rules
    [("")
     web-main-page]
-   [("api" "v0" "srfi" (integer-arg) "info") web-api-srfi-info]
-   [("api" "v0" "srfi" (integer-arg) "args") web-api-srfi-args]
-   [("api" "v0" "srfi" (integer-arg) "html") web-api-srfi-html]
+   [("file" (string-arg)) web-file]
    [("admin" "github")
     #:method "post"
     web-admin-github]
