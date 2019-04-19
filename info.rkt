@@ -5,6 +5,7 @@
 (define deps
   '("crypto"
     "css-expr"
+    "database-url"
     "r7rs"))
 
 (define build-deps
